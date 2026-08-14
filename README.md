@@ -108,7 +108,7 @@ docker run --name my-postgres \
   -e POSTGRES_DB=mydb \
   -p 5432:5432 \
   -v postgres_data:/var/lib/postgresql/data \
-  -d postgres
+  -d postgres:16
 ```
 
 **ফ্ল্যাগের ব্যাখ্যা:**
