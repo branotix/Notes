@@ -108,7 +108,7 @@ docker run --name my-postgres \
   -e POSTGRES_DB=mydb \
   -p 5432:5432 \
   -v postgres_data:/var/lib/postgresql/data \
-  -d postgres:16
+  -d postgres
 ```
 
 **ফ্ল্যাগের ব্যাখ্যা:**
@@ -179,6 +179,30 @@ docker compose up -d
 
 ---
 
+### ৫. golang-migrate ইনস্টল করা (অফিশিয়াল পদ্ধতি)
+
+Docker ও PostgreSQL সেটআপ শেষ করার পরে শেখা — `golang-migrate` হলো ডাটাবেস মাইগ্রেশন টুল। অফিশিয়াল ওয়েবসাইটের মতো Variable সেট করে ইনস্টল করার পদ্ধতি:
+
+```bash
+export version=v4.17.0
+export os=linux
+export arch=amd64
+
+curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.$os-$arch.tar.gz | tar xvz
+sudo mv migrate /usr/local/bin/
+migrate -version
+```
+
+**ব্যাখ্যা:**
+- `export version=v4.17.0` — কোন ভার্সন ইনস্টল করা হবে সেটা variable-এ সেট করা
+- `export os=linux` — অপারেটিং সিস্টেম (macOS হলে `darwin`)
+- `export arch=amd64` — সিস্টেম আর্কিটেকচার
+- `curl -L ... | tar xvz` — GitHub রিলিজ থেকে বাইনারি ডাউনলোড করে সরাসরি এক্সট্র্যাক্ট করা
+- `sudo mv migrate /usr/local/bin/` — এক্সট্র্যাক্ট করা বাইনারিটা সিস্টেম PATH-এ move করা, যাতে যেকোনো জায়গা থেকে `migrate` কমান্ড চালানো যায়
+- `migrate -version` — ইনস্টল ঠিকমতো হয়েছে কিনা যাচাই করা
+
+---
+
 ### Quick Revision Points
 
 - **dbdiagram.io** — কোড লিখে দ্রুত ERD (ডাটাবেস ডায়াগ্রাম) বানানোর ফ্রি টুল।
@@ -189,6 +213,7 @@ docker compose up -d
 - ডাটা যেন হারিয়ে না যায় সেজন্য সবসময় `-v` দিয়ে volume মাউন্ট করা জরুরি।
 - একাধিক সার্ভিস একসাথে চালাতে হলে `docker-compose.yml` + `docker compose up -d`।
 - ব্যাকআপ নিতে `pg_dump`, রিস্টোর করতে `psql`-এ pipe করে।
+- **golang-migrate** — `export` দিয়ে version/os/arch সেট করে GitHub রিলিজ থেকে বাইনারি ডাউনলোড ও `/usr/local/bin/`-এ move করে ইনস্টল করা হয়; `migrate -version` দিয়ে যাচাই করা যায়।
 
 ---
 
