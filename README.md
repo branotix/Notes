@@ -256,6 +256,24 @@ migratedown:
 **দুইটা জায়গা ঠিক করে দিয়েছি, খেয়াল রেখো:**
 - **কানেকশন স্ট্রিং:** `postgres://admin/secret@...` লিখেছিলে — এখানে `/` ভুল, `:` হওয়া উচিত (`user:password@host`)। সঠিক ফরম্যাট: `postgres://<user>:<password>@<host>:<port>/<dbname>?sslmode=disable`। এছাড়া `postgres` কন্টেইনার তৈরির সময় password `admin` দিয়েছিলে (`POSTGRES_PASSWORD=admin`), কিন্তু কানেকশন স্ট্রিং-এ password লিখেছিলে `secret` — দুটো মিলছিল না, তাই দুই জায়গাতেই `admin` রেখেছি (তোমার আসল পাসওয়ার্ড যেটা, সেটাই দুই জায়গায় মিলিয়ে দিও)।
 - **.PHONY:** তুমি লিখেছিলে `PHONY:` — শুরুতে একটা ডট (`.`) লাগবে, তাই `.PHONY:` হবে। `.PHONY` Makefile-কে বলে দেয় যে এই নামগুলো (createdb, dropdb ইত্যাদি) আসলে কোনো ফাইলের নাম না, বরং শুধু কমান্ড চালানোর জন্য — এতে যদি ভুলবশত প্রজেক্টে `postgres` বা `createdb` নামে কোনো ফাইল থেকেও যায়, তাও `make` ঠিকমতো কমান্ডটাই রান করবে।
+- **make postgresdown:** লিখলে যাতে কন্টেইনার এবং ভলিউম দুটিই একসাথে ডিলিট হয়ে যায়, সেজন্য আপনার Makefile-এ এভাবে লিখুন
+```
+postgresdown:
+	docker rm -f postgres16 && docker volume rm postgres_data
+```
+- && (প্রস্তাবিত): প্রথম কমান্ডটি (docker rm -f) সফল হলে তবেই দ্বিতীয় কমান্ডটি (docker volume rm) রান করবে। ; (সেমিকোলন): প্রথম কমান্ডটিতে কোনো এরর আসলেও (যেমন কন্টেইনার আগে থেকেই ডিলিট করা থাকলে) দ্বিতীয় কমান্ডটি রান করার চেষ্টা করবে:
+
+```
+postgresdown:
+	docker rm -f postgres16 ; docker volume rm postgres_data
+```
+- কমান্ডের শুরুতে - ব্যবহার করা: কন্টেইনার বা ভলিউম না থাকলেও যাতে Makefile এরর দিয়ে থেমে না যায়, সেজন্য কমান্ডের আগে একটি ছোট হাইফেন - জুড়ে দিতে পারেন:
+```
+postgresdown:
+	-docker rm -f postgres16
+	-docker volume rm postgres_data
+```
+---
 
 **কমান্ডগুলোর কাজ:**
 
