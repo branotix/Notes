@@ -202,30 +202,72 @@ migrate -version
 - `migrate -version` — ইনস্টল ঠিকমতো হয়েছে কিনা যাচাই করা
 
 ---
-# Migration, Docker and Makefile Setup
 
-আমরা এখন Migration, Docker এবং Makefile ব্যবহার করে প্রজেক্ট সেটআপ শিখতে যাচ্ছি।
+### ৬. প্রজেক্ট সেটআপ: Migration + Docker + Makefile
 
-## Project Folder Structure
-```text
-.
-├── Makefile
-└── db/
-    └── migration/
+golang-migrate, Docker এবং Makefile একসাথে ব্যবহার করে কীভাবে একটা প্রজেক্ট সেটআপ করতে হয় তার প্র্যাকটিক্যাল অংশ।
 
-## Migration (Up Schema & Down Schema)
-প্রথমে আমরা জানব কীভাবে Migration ব্যবহার করে Up Schema এবং Down Schema বানাতে হয়।
+**সিম্পল ফোল্ডার স্ট্রাকচার:**
+```
+db/
+  migration/
+Makefile
+```
 
-> এটি মুখস্থ করার দরকার নেই, শুধু বুঝতে হবে। `migrate --help` থেকে কমান্ড দেখে দেখেই লেখা যাবে।
+#### migrate দিয়ে migration ফাইল তৈরি করা
+
+`migrate create` কমান্ডের সাথে কোন ফ্ল্যাগ কী কাজ করে সেটা বোঝাটাই জরুরি, পুরো কমান্ড মুখস্থ করার দরকার নেই — `migrate --help` চালালেই সব ফ্ল্যাগ দেখা যায়, সেখান থেকে দেখে দেখে লেখা যায়।
 
 ```bash
 migrate create -ext sql -dir db/migration -seq bank_db_schema
 ```
 
-- `-ext`: ফাইল এক্সটেনশন বোঝানো হয়েছে।
-- `-dir`: কোন ডিরেক্টরিতে মাইগ্রেশন সেভ হবে তা বোঝানো হয়েছে।
-- `-seq`: সিকোয়েন্স বোঝানো হয়েছে।
-- `bank_db_schema`: এটি Migration-এর নাম।
+| ফ্ল্যাগ | কাজ |
+|---|---|
+| `-ext sql` | তৈরি হওয়া মাইগ্রেশন ফাইলের এক্সটেনশন কী হবে সেটা বোঝায় (এখানে `.sql`) |
+| `-dir db/migration` | কোন ডিরেক্টরিতে মাইগ্রেশন ফাইল সেভ হবে সেটা বোঝায় |
+| `-seq` | মাইগ্রেশন ফাইলের নামের আগে সিকোয়েন্স নম্বর (001, 002...) বসাবে, যাতে কোনটা আগে-পরে চলবে বোঝা যায় |
+| `bank_db_schema` | মাইগ্রেশন-এর নাম — এই কমান্ড চালালে `db/migration` ফোল্ডারে `..._up.sql` এবং `..._down.sql` — এই দুইটা ফাইল তৈরি হবে (up = পরিবর্তন apply করার schema, down = সেই পরিবর্তন revert করার schema) |
+
+#### Makefile
+
+```makefile
+postgres:
+	docker run --name postgres16 -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -e POSTGRES_DB=mydb -p 5433:5432 -v postgres_data:/var/lib/postgresql/data -d postgres:16
+
+postgresdown:
+	docker rm -f postgres16 && docker volume rm postgres_data
+
+createdb:
+	docker exec -it postgres16 createdb --username=admin --owner=admin simple_bank
+
+dropdb:
+	docker exec -it postgres16 dropdb --username=admin simple_bank
+
+migrateup:
+	migrate -path db/migration -database "postgres://admin:admin@localhost:5433/simple_bank?sslmode=disable" -verbose up
+
+migratedown:
+	migrate -path db/migration -database "postgres://admin:admin@localhost:5433/simple_bank?sslmode=disable" -verbose down
+
+.PHONY: createdb dropdb postgres postgresdown migrateup migratedown
+```
+
+**দুইটা জায়গা ঠিক করে দিয়েছি, খেয়াল রেখো:**
+- **কানেকশন স্ট্রিং:** `postgres://admin/secret@...` লিখেছিলে — এখানে `/` ভুল, `:` হওয়া উচিত (`user:password@host`)। সঠিক ফরম্যাট: `postgres://<user>:<password>@<host>:<port>/<dbname>?sslmode=disable`। এছাড়া `postgres` কন্টেইনার তৈরির সময় password `admin` দিয়েছিলে (`POSTGRES_PASSWORD=admin`), কিন্তু কানেকশন স্ট্রিং-এ password লিখেছিলে `secret` — দুটো মিলছিল না, তাই দুই জায়গাতেই `admin` রেখেছি (তোমার আসল পাসওয়ার্ড যেটা, সেটাই দুই জায়গায় মিলিয়ে দিও)।
+- **.PHONY:** তুমি লিখেছিলে `PHONY:` — শুরুতে একটা ডট (`.`) লাগবে, তাই `.PHONY:` হবে। `.PHONY` Makefile-কে বলে দেয় যে এই নামগুলো (createdb, dropdb ইত্যাদি) আসলে কোনো ফাইলের নাম না, বরং শুধু কমান্ড চালানোর জন্য — এতে যদি ভুলবশত প্রজেক্টে `postgres` বা `createdb` নামে কোনো ফাইল থেকেও যায়, তাও `make` ঠিকমতো কমান্ডটাই রান করবে।
+
+**কমান্ডগুলোর কাজ:**
+
+| কমান্ড | কাজ |
+|---|---|
+| `make postgres` | PostgreSQL ১৬ ভার্সনের কন্টেইনার চালু করে (পোর্ট 5433 → কন্টেইনারের 5432-এ ম্যাপ করা) |
+| `make postgresdown` | কন্টেইনার ও তার volume — দুটোই মুছে ফেলে |
+| `make createdb` | কন্টেইনারের ভেতরে `simple_bank` নামে নতুন ডাটাবেজ তৈরি করে |
+| `make dropdb` | `simple_bank` ডাটাবেজ মুছে ফেলে |
+| `make migrateup` | `db/migration` ফোল্ডারের সব migration schema apply করে (up) |
+| `make migratedown` | সব migration revert করে দেয় (down) |
+
 ---
 
 ### Quick Revision Points
@@ -239,6 +281,8 @@ migrate create -ext sql -dir db/migration -seq bank_db_schema
 - একাধিক সার্ভিস একসাথে চালাতে হলে `docker-compose.yml` + `docker compose up -d`।
 - ব্যাকআপ নিতে `pg_dump`, রিস্টোর করতে `psql`-এ pipe করে।
 - **golang-migrate** — `export` দিয়ে version/os/arch সেট করে GitHub রিলিজ থেকে বাইনারি ডাউনলোড ও `/usr/local/bin/`-এ move করে ইনস্টল করা হয়; `migrate -version` দিয়ে যাচাই করা যায়।
+- **migrate create** কমান্ড পুরোটা মুখস্থ না করে `migrate --help` দেখে দেখে লেখার অভ্যাস করা — `-ext` (extension), `-dir` (কোথায় সেভ হবে), `-seq` (sequence number), শেষে migration-এর নাম।
+- **Makefile**-এ কানেকশন স্ট্রিং সবসময় `user:password@host` ফরম্যাটে (কোলন দিয়ে, স্ল্যাশ না) এবং `.PHONY` লেখার সময় শুরুতে ডট (`.`) ভুলে গেলে চলবে না।
 
 ---
 
