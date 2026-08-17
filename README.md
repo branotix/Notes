@@ -202,6 +202,23 @@ migrate -version
 - `migrate -version` — ইনস্টল ঠিকমতো হয়েছে কিনা যাচাই করা
 
 ---
+# Migration, Docker & Makefile Setup Guide
+
+এই প্রজেক্টে আমরা **Docker**, **Makefile**, এবং **Golang Migrate** ব্যবহার করে একটি ডাটাবেস মাইগ্রেশন প্রসেস ও প্রজেক্ট সেটআপ শিখব।
+
+---
+
+## 📂 Project Folder Structure
+
+প্রজেক্টের প্রাথমিক ফোল্ডার ও ফাইল স্ট্রাকচার:
+
+```text
+.
+├── Makefile
+└── db/
+    └── migration/
+
+---
 
 ### Quick Revision Points
 
