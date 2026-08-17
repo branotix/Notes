@@ -207,8 +207,11 @@ migrate -version
 আমরা এখন Migration, Docker এবং Makefile ব্যবহার করে প্রজেক্ট সেটআপ শিখতে যাচ্ছি।
 
 ## Project Folder Structure
-- Makefile
-- db/migration
+```text
+.
+├── Makefile
+└── db/
+    └── migration/
 
 ## Migration (Up Schema & Down Schema)
 প্রথমে আমরা জানব কীভাবে Migration ব্যবহার করে Up Schema এবং Down Schema বানাতে হয়।
