@@ -202,22 +202,27 @@ migrate -version
 - `migrate -version` — ইনস্টল ঠিকমতো হয়েছে কিনা যাচাই করা
 
 ---
-# Migration, Docker & Makefile Setup Guide
+# Migration, Docker and Makefile Setup
 
-এই প্রজেক্টে আমরা **Docker**, **Makefile**, এবং **Golang Migrate** ব্যবহার করে একটি ডাটাবেস মাইগ্রেশন প্রসেস ও প্রজেক্ট সেটআপ শিখব।
+আমরা এখন Migration, Docker এবং Makefile ব্যবহার করে প্রজেক্ট সেটআপ শিখতে যাচ্ছি।
 
----
+## Project Folder Structure
+- Makefile
+- db/migration
 
-## 📂 Project Folder Structure
+## Migration (Up Schema & Down Schema)
+প্রথমে আমরা জানব কীভাবে Migration ব্যবহার করে Up Schema এবং Down Schema বানাতে হয়।
 
-প্রজেক্টের প্রাথমিক ফোল্ডার ও ফাইল স্ট্রাকচার:
+> এটি মুখস্থ করার দরকার নেই, শুধু বুঝতে হবে। `migrate --help` থেকে কমান্ড দেখে দেখেই লেখা যাবে।
 
-```text
-.
-├── Makefile
-└── db/
-    └── migration/
+```bash
+migrate create -ext sql -dir db/migration -seq bank_db_schema
+```
 
+- `-ext`: ফাইল এক্সটেনশন বোঝানো হয়েছে।
+- `-dir`: কোন ডিরেক্টরিতে মাইগ্রেশন সেভ হবে তা বোঝানো হয়েছে।
+- `-seq`: সিকোয়েন্স বোঝানো হয়েছে।
+- `bank_db_schema`: এটি Migration-এর নাম।
 ---
 
 ### Quick Revision Points
